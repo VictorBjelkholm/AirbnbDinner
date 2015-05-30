@@ -81,6 +81,47 @@ app.get('/alive', function handleAlive(req, res) {
 
 app.use(express.static('web'));
 
+var DinnersService = {
+	createDinner: function(dinner, callback) {
+		if(dinner.user_id === undefined) {
+			callback({message: "UserID required"});
+			return
+		}
+		if(dinner.timestamp === undefined) {
+			dinner.timestamp = new Date();
+		}
+		if(dinner.location === undefined) {
+			callback({message: "Location required"});
+			return
+		}
+		if(dinner.can_donate_on_cancel === undefined) {
+			callback({message: "CanDonateOnCancel required"})
+			return
+		}
+		if(dinner.people_allowed === undefined) {
+			callback({message: "PeopleAllowed required"})
+			return
+		}
+		if(dinner.cousine_id === undefined) {
+			callback({message: "CousineID required"})
+			return
+		}
+		if(dinner.description === undefined) {
+			callback({message: "Description required"})
+			return
+		}
+		if(dinner.will_donate === undefined) {
+			callback({message: "WillDonate required"})
+			return
+		}
+
+		dinner.type = Dinner.type;
+		cpsConn.sendRequest(new cps.InsertRequest(dinner), function(err, insert_response) {
+			callback(err, dinner);
+		});
+	}
+};
+
 var UsersService = {
 	findByEmail: function(email, callback) {
 		var search_req = new cps.SearchRequest(cps.Term(email, "email"));
@@ -113,6 +154,7 @@ var UsersService = {
 		this.findByEmail(user.email, function(err, found) {
 			if(!found) {
 				user.id = guid();
+				user.type = User.type
 				cpsConn.sendRequest(new cps.InsertRequest(user), function(err, insert_response) {
 					callback(err, user);
 				});
@@ -134,6 +176,17 @@ app.post('/users', function handlePostUsers(req, res) {
 			log('user');
 			log(user);
 			res.send(user);
+		}
+	});
+});
+
+app.post('/dinners', function handlePostDinners(req, res) {
+	var body = req.body;
+	DinnersService.createDinner(body, function(err, dinner) {
+		if(err) {
+			res.send(err);
+		} else {
+			res.send(dinner);
 		}
 	});
 });
